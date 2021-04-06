@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels: 
+    app: nginx-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx-alpine
+        image: nginx-alpine
+        imagePullPolicy: Never
+        env:
+        - name: SSH_USER
+          valueFrom: 
+            secretKeyRef:
+              name: db-secret
+              key: ssh-user
+        - name: SSH_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: db-secret
+              key: ssh-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    metallb.universe.tf/allow-shared-ip: shared
+  name: nginx-service
+  labels:
+    pods: nginx
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
+    - name: ssh
+      port: 22
+      targetPort: 22

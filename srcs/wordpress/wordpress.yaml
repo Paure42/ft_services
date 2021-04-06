@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wordpress-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress
+    spec:
+      containers:
+      - image: wordpress-alpine
+        name: wordpress-alpine
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5050
+        env:
+        - name: DB_NAME
+          valueFrom: 
+            secretKeyRef:
+              name: db-secret
+              key: db-name
+        - name: DB_USER
+          valueFrom: 
+            secretKeyRef:
+              name: db-secret
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: db-secret
+              key: db-password
+        - name: DB_HOST
+          value: mysql-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    metallb.universe.tf/allow-shared-ip: shared
+  name: wordpress-service
+spec:
+  ports:
+  - name: http
+    protocol: TCP
+    port: 5050
+    targetPort: 5050
+  selector:
+    app: wordpress
+  type: LoadBalancer
